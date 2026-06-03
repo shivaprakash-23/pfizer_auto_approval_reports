@@ -375,7 +375,7 @@
 
   <!-- Header -->
   <div class="report-header">
-    <div class="badge">Internal — Engineering Ops</div>
+    <div class="badge">Pfizer Analysis</div>
     <h1>PR Validation — False Positive Analysis</h1>
     <div class="meta">Prepared June 3, 2026 &nbsp;·&nbsp; Based on 145 PRs evaluated &nbsp;·&nbsp; Prompt changes deployed June 2, 2026</div>
   </div>
@@ -483,7 +483,7 @@
           </td>
           <td>59%</td>
           <td><span class="pill pill-fixed">Fixed</span></td>
-          <td>Model flagged legal entity name vs. trade name variants. Prompt updated to handle aliases.</td>
+          <td>Prompt Changes are published in production. Under monitoring to verify the results.</td>
         </tr>
         <tr>
           <td>Step 11: Align Line Item Price, Total Amount, and Currency</td>
@@ -495,7 +495,7 @@
           </td>
           <td>56%</td>
           <td><span class="pill pill-fixed">Fixed</span></td>
-          <td>Format differences ("$1,000" vs "1000.00 USD") treated as mismatches. Prompt now normalises before comparison.</td>
+          <td>Prompt Changes are published in production. Under monitoring to verify the results.</td>
         </tr>
         <tr>
           <td>Step 5a: Certificate of Insurance</td>
@@ -507,7 +507,7 @@
           </td>
           <td>26%</td>
           <td><span class="pill pill-in-progress">In progress</span></td>
-          <td>Non-standard COI formats and expiry date presentations incorrectly rejected. Prompt change ETA this week.</td>
+          <td>Prompt changes and testing - ETA this week.</td>
         </tr>
         <tr>
           <td>Step 12b: Ensure milestone payments match supporting documentation</td>
@@ -519,7 +519,7 @@
           </td>
           <td>12%</td>
           <td><span class="pill pill-blocked">Blocked</span></td>
-          <td>Acceptance criteria unclear — partial milestone matches. Requires user/ops clarification before fix.</td>
+          <td>Requires user/ops clarification.</td>
         </tr>
         <tr>
           <td>Step 17: Ensure Preferred Dispatch Method is Selected</td>
@@ -531,7 +531,7 @@
           </td>
           <td>9%</td>
           <td><span class="pill pill-pending">Pending</span></td>
-          <td>Under investigation. Low priority — triage after Tier 1/2 fixes validated.</td>
+          <td>Yet to investigate due to low volume.</td>
         </tr>
         <tr>
           <td>Step 11: For US — document attached, steps must be re-run</td>
@@ -543,7 +543,7 @@
           </td>
           <td>3%</td>
           <td><span class="pill pill-pending">Pending</span></td>
-          <td>US-specific document rule triggering incorrectly.</td>
+          <td>Yet to investigate due to low volume.</td>
         </tr>
         <tr>
           <td>Step 3a: Ensure Appropriate CP102 Purchasing Justification</td>
@@ -555,7 +555,7 @@
           </td>
           <td>3%</td>
           <td><span class="pill pill-pending">Pending</span></td>
-          <td>CP102 option matching edge case.</td>
+          <td>Yet to investigate due to low volume.</td>
         </tr>
         <tr>
           <td>Step 6: Supporting Documentation Signature Verification</td>
@@ -567,7 +567,7 @@
           </td>
           <td>3%</td>
           <td><span class="pill pill-pending">Pending</span></td>
-          <td>Signature format variation not handled.</td>
+          <td>Yet to investigate due to low volume.</td>
         </tr>
         <tr>
           <td>Step 7: Action item table information mismatch</td>
@@ -579,41 +579,10 @@
           </td>
           <td>3%</td>
           <td><span class="pill pill-pending">Pending</span></td>
-          <td>Step matches but action item table data inconsistent.</td>
+          <td>Yet to investigate due to low volume.</td>
         </tr>
       </tbody>
     </table>
-  </div>
-
-  <hr class="divider" />
-
-  <!-- Fix status -->
-  <div class="section-label">Fix status by tier</div>
-  <div class="status-grid">
-    <div class="status-card fixed">
-      <div class="status-badge badge-fixed">Fixed · Tier 1</div>
-      <div class="steps">Steps 7 &amp; 11</div>
-      <div class="fps">39 false positives · 66% of total</div>
-      <div class="desc">Prompts shipped June 2. Vendor name alias handling and currency/amount normalisation added. Awaiting June 5 validation data.</div>
-    </div>
-    <div class="status-card in-progress">
-      <div class="status-badge badge-in-progress">In progress · Tier 2</div>
-      <div class="steps">Step 5a</div>
-      <div class="fps">9 false positives · 15% of total</div>
-      <div class="desc">Certificate of Insurance non-standard formats. Prompt change ETA this week. Will bring rate to ~6% if successful.</div>
-    </div>
-    <div class="status-card blocked">
-      <div class="status-badge badge-blocked">Blocked · Tier 2</div>
-      <div class="steps">Step 12b</div>
-      <div class="fps">4 false positives · 7% of total</div>
-      <div class="desc">Milestone payment matching rules unclear. Ops/product team must define acceptance criteria before fix can proceed.</div>
-    </div>
-    <div class="status-card pending">
-      <div class="status-badge badge-pending">Pending · Tier 3</div>
-      <div class="steps">Steps 17, 11-US, 3a, 6, 7-table</div>
-      <div class="fps">7 false positives · 12% of total</div>
-      <div class="desc">Low-count errors. Queue for investigation after Tier 1 &amp; 2 fixes are stable and confirmed in production.</div>
-    </div>
   </div>
 
   <hr class="divider" />
@@ -644,55 +613,65 @@
 
   <hr class="divider" />
 
-  <!-- Recommendations -->
-  <div class="section-label">Recommendations</div>
-  <div class="recs">
-    <div class="rec-item">
-      <div class="rec-num">1</div>
-      <div class="rec-text"><strong>Validate Tier 1 fixes by June 5.</strong> Compare actual FP count against the 14-PR / 9% target. If results fall short, re-examine the prompt changes for Steps 7 and 11 before shipping further changes.</div>
-    </div>
-    <div class="rec-item">
-      <div class="rec-num">2</div>
-      <div class="rec-text"><strong>Unblock Step 12b immediately.</strong> Schedule a quick sync with the ops/product team to define the exact rule for partial milestone matches. Until this is resolved, 4 FPs remain stuck with no fix path.</div>
-    </div>
-    <div class="rec-item">
-      <div class="rec-num">3</div>
-      <div class="rec-text"><strong>Ship Step 5a fix this week as planned.</strong> Successful delivery would reduce the FP rate to ~6%, well below the 9% target, and free up bandwidth to address Tier 3 errors.</div>
-    </div>
-    <div class="rec-item">
-      <div class="rec-num">4</div>
-      <div class="rec-text"><strong>Triage Tier 3 errors after Tier 1/2 stabilise.</strong> Steps 17, 3a, 6, 11-US, and 7-table collectively add 7 FPs. Address them as a batch once the higher-impact fixes are confirmed stable.</div>
-    </div>
-    <div class="rec-item">
-      <div class="rec-num">5</div>
-      <div class="rec-text"><strong>Define an auto-approval threshold.</strong> Once FP rate is sustainably ≤5% across two consecutive data snapshots, enable auto-approval for high-confidence matches (e.g., match score ≥ 90). This is the ultimate goal of the feedback loop.</div>
+  <!-- Auto-approval readiness -->
+  <div class="section-label">Auto-approval readiness</div>
+
+  <!-- Threshold status banner -->
+  <div style="background:#FAEEDA;border:1px solid #EF9F27;border-radius:10px;padding:1rem 1.25rem;margin-bottom:16px;display:flex;align-items:flex-start;gap:12px;">
+    <div style="font-size:20px;flex-shrink:0;margin-top:1px;">&#9888;</div>
+    <div>
+      <div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#854F0B;margin-bottom:6px;">Not yet ready — current FP rate is 23% (threshold: &lt;7%)</div>
+      <p style="font-size:13px;color:#633806;line-height:1.6;">Auto-approval for <strong>Standard PRs · Country NAM-US · High Match PRs</strong> will be enabled once the false positive rate is confirmed below <strong>7%</strong> across two consecutive data snapshots. The current rate of <strong>23%</strong> is well above this threshold.</p>
     </div>
   </div>
 
-  <hr class="divider" />
+  <!-- FP reduction roadmap -->
+  <div style="background:#fff;border:1px solid #e8e7e0;border-radius:10px;padding:1.1rem 1.25rem;margin-bottom:16px;">
+    <div style="font-size:12px;font-weight:600;color:#5f5e5a;margin-bottom:14px;">Expected FP rate reduction — path to auto-approval</div>
+    <div style="display:flex;flex-direction:column;gap:0;">
 
-  <!-- Timeline -->
-  <div class="section-label">Timeline</div>
-  <div class="timeline">
-    <div class="tl-item">
-      <div class="tl-left"><div class="tl-dot" style="background:#E24B4A;"></div><div class="tl-line"></div></div>
-      <div><div class="tl-date">June 2, 2026</div><div class="tl-desc">Prompt changes deployed for <strong>Step 7</strong> (Vendor Name) and <strong>Step 11</strong> (Line Items / Currency). Projected to remove 20 FPs combined.</div></div>
+      <!-- Stage row helper -->
+      <div style="display:grid;grid-template-columns:160px 1fr 80px 100px;gap:0;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#888780;padding:0 0 8px 0;border-bottom:1px solid #f0efe8;">
+        <span>Stage</span><span>Actions</span><span style="text-align:right;">FP PRs</span><span style="text-align:right;">FP rate</span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:160px 1fr 80px 100px;gap:0;padding:10px 0;border-bottom:1px solid #f0efe8;align-items:center;">
+        <span style="font-size:12px;font-weight:600;color:#A32D2D;">Current</span>
+        <span style="font-size:12px;color:#5f5e5a;">Baseline — pre-fix</span>
+        <span style="font-size:13px;font-weight:700;color:#A32D2D;text-align:right;">34</span>
+        <span style="font-size:13px;font-weight:700;color:#A32D2D;text-align:right;">23%</span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:160px 1fr 80px 100px;gap:0;padding:10px 0;border-bottom:1px solid #f0efe8;align-items:center;">
+        <span style="font-size:12px;font-weight:600;color:#854F0B;">After June 2 fixes</span>
+        <span style="font-size:12px;color:#5f5e5a;">Steps 7 &amp; 11 prompts deployed (−20 FPs projected)</span>
+        <span style="font-size:13px;font-weight:700;color:#854F0B;text-align:right;">~14</span>
+        <span style="font-size:13px;font-weight:700;color:#854F0B;text-align:right;">~9%</span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:160px 1fr 80px 100px;gap:0;padding:10px 0;border-bottom:1px solid #f0efe8;align-items:center;">
+        <span style="font-size:12px;font-weight:600;color:#854F0B;">After Step 5a fix</span>
+        <span style="font-size:12px;color:#5f5e5a;">Certificate of Insurance prompt — ETA this week (−9 FPs)</span>
+        <span style="font-size:13px;font-weight:700;color:#854F0B;text-align:right;">~5</span>
+        <span style="font-size:13px;font-weight:700;color:#854F0B;text-align:right;">~3%</span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:160px 1fr 80px 100px;gap:0;padding:10px 0;align-items:center;background:#EAF3DE;border-radius:6px;padding-left:8px;margin-top:4px;">
+        <span style="font-size:12px;font-weight:700;color:#0F6E56;">&#10003; Auto-approval ready</span>
+        <span style="font-size:12px;color:#27500A;">FP rate confirmed &lt;7% over 2 consecutive snapshots</span>
+        <span style="font-size:13px;font-weight:700;color:#0F6E56;text-align:right;">&lt;10</span>
+        <span style="font-size:13px;font-weight:700;color:#0F6E56;text-align:right;">&lt;7%</span>
+      </div>
+
     </div>
-    <div class="tl-item">
-      <div class="tl-left"><div class="tl-dot" style="background:#EF9F27;"></div><div class="tl-line"></div></div>
-      <div><div class="tl-date">This week</div><div class="tl-desc"><strong>Step 5a</strong> (Certificate of Insurance) prompt change expected. Would bring FP rate to ~6%.</div></div>
-    </div>
-    <div class="tl-item">
-      <div class="tl-left"><div class="tl-dot" style="background:#1D9E75;"></div><div class="tl-line"></div></div>
-      <div><div class="tl-date">June 5, 2026</div><div class="tl-desc">Actual outcome data available. Validate against 9% projected target and adjust plan if needed.</div></div>
-    </div>
-    <div class="tl-item">
-      <div class="tl-left"><div class="tl-dot" style="background:#B4B2A9;"></div><div class="tl-line"></div></div>
-      <div><div class="tl-date">TBD</div><div class="tl-desc"><strong>Step 12b</strong> fix — pending ops/product team clarification on milestone matching rules.</div></div>
-    </div>
-    <div class="tl-item">
-      <div class="tl-left"><div class="tl-dot" style="background:#B4B2A9;"></div></div>
-      <div><div class="tl-date">TBD</div><div class="tl-desc">Tier 3 triage (Steps 17, 3a, 6, 11-US, 7-table) and auto-approval threshold evaluation once FP rate ≤5%.</div></div>
+  </div>
+
+  <!-- What happens at <7% -->
+  <div style="background:#EAF3DE;border:1px solid #C0DD97;border-radius:10px;padding:1rem 1.25rem;display:flex;align-items:flex-start;gap:12px;">
+    <div style="font-size:18px;flex-shrink:0;margin-top:2px;">&#10003;</div>
+    <div>
+      <div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#3B6D11;margin-bottom:6px;">When FP rate drops below 7%</div>
+      <p style="font-size:13px;color:#27500A;line-height:1.6;">Automatic approval will be switched on for the defined scope — <strong>Standard PRs</strong>, <strong>Country NAM-US</strong>, and <strong>High Match PRs</strong>. PRs with a validation match score ≥ 90% will be approved without manual review. The feedback loop will continue to monitor the rate; if it rises back above 7%, auto-approval will be paused automatically.</p>
     </div>
   </div>
 
