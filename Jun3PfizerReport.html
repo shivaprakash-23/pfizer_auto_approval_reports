@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PR Validation — False Positive Analysis Report</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f5f4f0;
+    color: #1a1a18;
+    font-size: 15px;
+    line-height: 1.6;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .page {
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  /* Header */
+  .report-header {
+    margin-bottom: 2.5rem;
+  }
+  .report-header .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    background: #EAF3DE;
+    color: #3B6D11;
+    border-radius: 4px;
+    padding: 3px 10px;
+    margin-bottom: 12px;
+  }
+  .report-header h1 {
+    font-size: 28px;
+    font-weight: 600;
+    color: #1a1a18;
+    margin-bottom: 6px;
+  }
+  .report-header .meta {
+    font-size: 13px;
+    color: #888780;
+  }
+  .divider {
+    border: none;
+    border-top: 1px solid #e0dfd8;
+    margin: 2rem 0;
+  }
+
+  /* Section labels */
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: #888780;
+    margin-bottom: 12px;
+  }
+
+  /* Metric cards */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 2rem;
+  }
+  .metric-card {
+    background: #fff;
+    border: 1px solid #e8e7e0;
+    border-radius: 10px;
+    padding: 1rem 1.1rem;
+  }
+  .metric-card .label {
+    font-size: 12px;
+    color: #888780;
+    margin-bottom: 6px;
+  }
+  .metric-card .value {
+    font-size: 30px;
+    font-weight: 600;
+    line-height: 1;
+  }
+  .metric-card .sub {
+    font-size: 12px;
+    color: #888780;
+    margin-top: 4px;
+  }
+  .val-neutral { color: #1a1a18; }
+  .val-danger  { color: #A32D2D; }
+  .val-success { color: #0F6E56; }
+  .val-amber   { color: #854F0B; }
+
+  /* Charts row */
+  .charts-row {
+    display: grid;
+    grid-template-columns: 1.65fr 1fr;
+    gap: 16px;
+    margin-bottom: 2rem;
+  }
+  .card {
+    background: #fff;
+    border: 1px solid #e8e7e0;
+    border-radius: 10px;
+    padding: 1.1rem 1.25rem;
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: #5f5e5a;
+    margin-bottom: 10px;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 10px;
+    font-size: 12px;
+    color: #888780;
+  }
+  .legend span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+
+  /* Fix status cards */
+  .status-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 2rem;
+  }
+  .status-card {
+    background: #fff;
+    border: 1px solid #e8e7e0;
+    border-radius: 10px;
+    padding: 1rem 1.1rem;
+    border-top: 3px solid transparent;
+  }
+  .status-card.fixed   { border-top-color: #E24B4A; }
+  .status-card.in-progress { border-top-color: #EF9F27; }
+  .status-card.blocked { border-top-color: #EF9F27; }
+  .status-card.pending { border-top-color: #B4B2A9; }
+
+  .status-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    border-radius: 3px;
+    padding: 2px 8px;
+    margin-bottom: 8px;
+  }
+  .badge-fixed       { background: #FCEBEB; color: #A32D2D; }
+  .badge-in-progress { background: #FAEEDA; color: #854F0B; }
+  .badge-blocked     { background: #FAEEDA; color: #854F0B; }
+  .badge-pending     { background: #F1EFE8; color: #5F5E5A; }
+
+  .status-card .steps { font-size: 14px; font-weight: 600; color: #1a1a18; margin-bottom: 4px; }
+  .status-card .fps   { font-size: 12px; color: #888780; margin-bottom: 6px; }
+  .status-card .desc  { font-size: 12px; color: #5f5e5a; line-height: 1.5; }
+
+  /* Error table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  thead th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: #888780;
+    padding: 8px 12px;
+    border-bottom: 1px solid #e8e7e0;
+    background: #faf9f6;
+  }
+  tbody tr {
+    border-bottom: 1px solid #f0efe8;
+  }
+  tbody tr:last-child { border-bottom: none; }
+  tbody td {
+    padding: 9px 12px;
+    vertical-align: middle;
+    color: #2c2c2a;
+  }
+  .bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .bar-track {
+    flex: 1;
+    height: 6px;
+    background: #f0efe8;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 3px;
+  }
+  .bar-label {
+    font-size: 12px;
+    font-weight: 500;
+    min-width: 20px;
+    text-align: right;
+  }
+  .pill {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 9px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .pill-fixed       { background: #FCEBEB; color: #A32D2D; }
+  .pill-in-progress { background: #FAEEDA; color: #854F0B; }
+  .pill-blocked     { background: #FAEEDA; color: #854F0B; }
+  .pill-pending     { background: #F1EFE8; color: #5F5E5A; }
+
+  /* Impact section */
+  .impact-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 2rem;
+  }
+  .impact-card {
+    background: #fff;
+    border: 1px solid #e8e7e0;
+    border-radius: 10px;
+    padding: 1rem 1.1rem;
+  }
+  .impact-card .phase {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #888780;
+    margin-bottom: 10px;
+  }
+  .impact-row-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    padding: 4px 0;
+    border-bottom: 1px solid #f0efe8;
+  }
+  .impact-row-inner:last-child { border-bottom: none; }
+  .impact-row-inner .lbl { color: #888780; }
+  .impact-row-inner .val { font-weight: 600; color: #1a1a18; }
+  .impact-card.tbd .val { color: #B4B2A9; }
+  .target-note {
+    font-size: 11px;
+    color: #888780;
+    margin-top: 6px;
+  }
+
+  /* Recommendations */
+  .recs {
+    background: #fff;
+    border: 1px solid #e8e7e0;
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 2rem;
+  }
+  .rec-item {
+    display: flex;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0efe8;
+  }
+  .rec-item:last-child { border-bottom: none; }
+  .rec-num {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #f0efe8;
+    color: #5f5e5a;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .rec-text { font-size: 13px; color: #2c2c2a; line-height: 1.55; }
+  .rec-text strong { font-weight: 600; color: #1a1a18; }
+
+  /* Timeline */
+  .timeline {
+    background: #fff;
+    border: 1px solid #e8e7e0;
+    border-radius: 10px;
+    padding: 1.25rem;
+  }
+  .tl-item {
+    display: flex;
+    gap: 16px;
+    position: relative;
+    padding-bottom: 16px;
+  }
+  .tl-item:last-child { padding-bottom: 0; }
+  .tl-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .tl-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+  .tl-line {
+    width: 1px;
+    flex: 1;
+    background: #e8e7e0;
+    margin-top: 4px;
+  }
+  .tl-item:last-child .tl-line { display: none; }
+  .tl-date { font-size: 12px; color: #888780; min-width: 110px; padding-top: 2px; }
+  .tl-desc { font-size: 13px; color: #2c2c2a; padding-top: 2px; }
+
+  /* Summary bar */
+  .summary-bar {
+    background: #EAF3DE;
+    border: 1px solid #C0DD97;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .summary-bar .icon {
+    font-size: 20px;
+    margin-top: 1px;
+    flex-shrink: 0;
+  }
+  .summary-bar p { font-size: 13px; color: #27500A; line-height: 1.6; }
+  .summary-bar strong { font-weight: 600; }
+
+  @media (max-width: 720px) {
+    .metrics-grid { grid-template-columns: repeat(2,1fr); }
+    .charts-row   { grid-template-columns: 1fr; }
+    .status-grid  { grid-template-columns: repeat(2,1fr); }
+    .impact-row   { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="report-header">
+    <div class="badge">Internal — Engineering Ops</div>
+    <h1>PR Validation — False Positive Analysis</h1>
+    <div class="meta">Prepared June 3, 2026 &nbsp;·&nbsp; Based on 145 PRs evaluated &nbsp;·&nbsp; Prompt changes deployed June 2, 2026</div>
+  </div>
+
+  <!-- Executive summary -->
+  <div class="summary-bar">
+    <div class="icon">&#9650;</div>
+    <p>The agentic validation workflow currently flags <strong>34 of 145 PRs</strong> as false positives — a <strong>23% false positive rate</strong>. Two prompt changes shipped on June 2 targeting the top two error sources (Steps 7 &amp; 11) are projected to reduce this to <strong>9% (14 FPs)</strong>. Actual outcomes will be confirmed with June 5 data.</p>
+  </div>
+
+  <!-- PR scope clause -->
+  <div style="background:#E6F1FB;border:1px solid #85B7EB;border-radius:10px;padding:1rem 1.25rem;margin-bottom:2rem;display:flex;align-items:flex-start;gap:12px;">
+    <div style="font-size:18px;flex-shrink:0;margin-top:1px;">&#128196;</div>
+    <div>
+      <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#185FA5;margin-bottom:8px;">Data scope — PR types included</div>
+      <p style="font-size:13px;color:#0C447C;line-height:1.6;margin-bottom:8px;">This report covers false positive analysis across the following three PR categories only:</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <span style="background:#fff;border:1px solid #85B7EB;border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;color:#185FA5;">Standard PRs</span>
+        <span style="background:#fff;border:1px solid #85B7EB;border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;color:#185FA5;">Country — NAM-US</span>
+        <span style="background:#fff;border:1px solid #85B7EB;border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;color:#185FA5;">High Match PRs</span>
+      </div>
+      <p style="font-size:12px;color:#378ADD;margin-top:8px;">PRs outside these categories are excluded from all metrics and error counts in this report.</p>
+    </div>
+  </div>
+
+  <!-- KPI row -->
+  <div class="section-label">Key metrics</div>
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="label">Total PRs evaluated</div>
+      <div class="value val-neutral">145</div>
+      <div class="sub">Current dataset</div>
+    </div>
+    <div class="metric-card">
+      <div class="label">False positive PRs</div>
+      <div class="value val-danger">34</div>
+      <div class="sub">Incorrectly flagged</div>
+    </div>
+    <div class="metric-card">
+      <div class="label">Current FP rate</div>
+      <div class="value val-danger">23%</div>
+      <div class="sub">Pre-fix baseline</div>
+    </div>
+    <div class="metric-card">
+      <div class="label">Projected FP rate</div>
+      <div class="value val-success">9%</div>
+      <div class="sub">Post June 2 fixes</div>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- Charts -->
+  <div class="section-label">Error distribution</div>
+  <div class="charts-row">
+
+    <div class="card">
+      <div class="card-title">False positives by validation step</div>
+      <div class="legend">
+        <span><span class="dot" style="background:#E24B4A;"></span>Prompt fixed</span>
+        <span><span class="dot" style="background:#EF9F27;"></span>In progress / blocked</span>
+        <span><span class="dot" style="background:#B4B2A9;"></span>Pending triage</span>
+      </div>
+      <div style="position:relative;width:100%;height:260px;">
+        <canvas id="barChart" role="img" aria-label="Horizontal bar chart. Step 7 Vendor Name 20 FPs, Step 11 Line Items 19, Step 5a CoI 9, Step 12b Milestones 4, Step 17 Dispatch 3, others 1 each.">Step 7: 20, Step 11: 19, Step 5a: 9, Step 12b: 4, Step 17: 3, others: 1 each.</canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">FP rate — before vs. after</div>
+      <div class="legend">
+        <span><span class="dot" style="background:#E24B4A;"></span>Before (23%)</span>
+        <span><span class="dot" style="background:#1D9E75;"></span>After projected (9%)</span>
+      </div>
+      <div style="position:relative;width:100%;height:260px;">
+        <canvas id="compareChart" role="img" aria-label="Bar chart comparing false positive rate: before fixes 23%, after projected 9%.">Before: 23%, After projected: 9%.</canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <hr class="divider" />
+
+  <!-- Error detail table -->
+  <div class="section-label">Root cause detail</div>
+  <div class="card" style="margin-bottom:2rem; padding:0; overflow:hidden;">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:34%;">Validation step</th>
+          <th style="width:18%;">False positives</th>
+          <th style="width:10%;">% of FPs</th>
+          <th style="width:15%;">Status</th>
+          <th>Root cause / action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Step 7: Align Vendor Name with Supporting Documentation</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:100%;background:#E24B4A;"></div></div>
+              <span class="bar-label" style="color:#A32D2D;">20</span>
+            </div>
+          </td>
+          <td>59%</td>
+          <td><span class="pill pill-fixed">Fixed</span></td>
+          <td>Model flagged legal entity name vs. trade name variants. Prompt updated to handle aliases.</td>
+        </tr>
+        <tr>
+          <td>Step 11: Align Line Item Price, Total Amount, and Currency</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:95%;background:#E24B4A;"></div></div>
+              <span class="bar-label" style="color:#A32D2D;">19</span>
+            </div>
+          </td>
+          <td>56%</td>
+          <td><span class="pill pill-fixed">Fixed</span></td>
+          <td>Format differences ("$1,000" vs "1000.00 USD") treated as mismatches. Prompt now normalises before comparison.</td>
+        </tr>
+        <tr>
+          <td>Step 5a: Certificate of Insurance</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:45%;background:#EF9F27;"></div></div>
+              <span class="bar-label" style="color:#854F0B;">9</span>
+            </div>
+          </td>
+          <td>26%</td>
+          <td><span class="pill pill-in-progress">In progress</span></td>
+          <td>Non-standard COI formats and expiry date presentations incorrectly rejected. Prompt change ETA this week.</td>
+        </tr>
+        <tr>
+          <td>Step 12b: Ensure milestone payments match supporting documentation</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:20%;background:#EF9F27;"></div></div>
+              <span class="bar-label" style="color:#854F0B;">4</span>
+            </div>
+          </td>
+          <td>12%</td>
+          <td><span class="pill pill-blocked">Blocked</span></td>
+          <td>Acceptance criteria unclear — partial milestone matches. Requires user/ops clarification before fix.</td>
+        </tr>
+        <tr>
+          <td>Step 17: Ensure Preferred Dispatch Method is Selected</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:15%;background:#B4B2A9;"></div></div>
+              <span class="bar-label" style="color:#5F5E5A;">3</span>
+            </div>
+          </td>
+          <td>9%</td>
+          <td><span class="pill pill-pending">Pending</span></td>
+          <td>Under investigation. Low priority — triage after Tier 1/2 fixes validated.</td>
+        </tr>
+        <tr>
+          <td>Step 11: For US — document attached, steps must be re-run</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:5%;background:#B4B2A9;"></div></div>
+              <span class="bar-label" style="color:#5F5E5A;">1</span>
+            </div>
+          </td>
+          <td>3%</td>
+          <td><span class="pill pill-pending">Pending</span></td>
+          <td>US-specific document rule triggering incorrectly.</td>
+        </tr>
+        <tr>
+          <td>Step 3a: Ensure Appropriate CP102 Purchasing Justification</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:5%;background:#B4B2A9;"></div></div>
+              <span class="bar-label" style="color:#5F5E5A;">1</span>
+            </div>
+          </td>
+          <td>3%</td>
+          <td><span class="pill pill-pending">Pending</span></td>
+          <td>CP102 option matching edge case.</td>
+        </tr>
+        <tr>
+          <td>Step 6: Supporting Documentation Signature Verification</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:5%;background:#B4B2A9;"></div></div>
+              <span class="bar-label" style="color:#5F5E5A;">1</span>
+            </div>
+          </td>
+          <td>3%</td>
+          <td><span class="pill pill-pending">Pending</span></td>
+          <td>Signature format variation not handled.</td>
+        </tr>
+        <tr>
+          <td>Step 7: Action item table information mismatch</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:5%;background:#B4B2A9;"></div></div>
+              <span class="bar-label" style="color:#5F5E5A;">1</span>
+            </div>
+          </td>
+          <td>3%</td>
+          <td><span class="pill pill-pending">Pending</span></td>
+          <td>Step matches but action item table data inconsistent.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- Fix status -->
+  <div class="section-label">Fix status by tier</div>
+  <div class="status-grid">
+    <div class="status-card fixed">
+      <div class="status-badge badge-fixed">Fixed · Tier 1</div>
+      <div class="steps">Steps 7 &amp; 11</div>
+      <div class="fps">39 false positives · 66% of total</div>
+      <div class="desc">Prompts shipped June 2. Vendor name alias handling and currency/amount normalisation added. Awaiting June 5 validation data.</div>
+    </div>
+    <div class="status-card in-progress">
+      <div class="status-badge badge-in-progress">In progress · Tier 2</div>
+      <div class="steps">Step 5a</div>
+      <div class="fps">9 false positives · 15% of total</div>
+      <div class="desc">Certificate of Insurance non-standard formats. Prompt change ETA this week. Will bring rate to ~6% if successful.</div>
+    </div>
+    <div class="status-card blocked">
+      <div class="status-badge badge-blocked">Blocked · Tier 2</div>
+      <div class="steps">Step 12b</div>
+      <div class="fps">4 false positives · 7% of total</div>
+      <div class="desc">Milestone payment matching rules unclear. Ops/product team must define acceptance criteria before fix can proceed.</div>
+    </div>
+    <div class="status-card pending">
+      <div class="status-badge badge-pending">Pending · Tier 3</div>
+      <div class="steps">Steps 17, 11-US, 3a, 6, 7-table</div>
+      <div class="fps">7 false positives · 12% of total</div>
+      <div class="desc">Low-count errors. Queue for investigation after Tier 1 &amp; 2 fixes are stable and confirmed in production.</div>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- Impact tracker -->
+  <div class="section-label">Outcome tracker</div>
+  <div class="impact-row">
+    <div class="impact-card">
+      <div class="phase" style="color:#A32D2D;">Current (pre-fix)</div>
+      <div class="impact-row-inner"><span class="lbl">Total PRs</span><span class="val">145</span></div>
+      <div class="impact-row-inner"><span class="lbl">False positive PRs</span><span class="val" style="color:#A32D2D;">34</span></div>
+      <div class="impact-row-inner"><span class="lbl">FP rate</span><span class="val" style="color:#A32D2D;">23%</span></div>
+    </div>
+    <div class="impact-card">
+      <div class="phase" style="color:#0F6E56;">Expected — post June 1 changes</div>
+      <div class="impact-row-inner"><span class="lbl">Total PRs</span><span class="val">145</span></div>
+      <div class="impact-row-inner"><span class="lbl">False positive PRs</span><span class="val" style="color:#0F6E56;">14</span></div>
+      <div class="impact-row-inner"><span class="lbl">FP rate</span><span class="val" style="color:#0F6E56;">9%</span></div>
+    </div>
+    <div class="impact-card tbd">
+      <div class="phase">Actual — June 5 data</div>
+      <div class="impact-row-inner"><span class="lbl">Total PRs</span><span class="val">—</span></div>
+      <div class="impact-row-inner"><span class="lbl">False positive PRs</span><span class="val">—</span></div>
+      <div class="impact-row-inner"><span class="lbl">FP rate</span><span class="val">—</span></div>
+      <div class="target-note">Target: ≤9%</div>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- Recommendations -->
+  <div class="section-label">Recommendations</div>
+  <div class="recs">
+    <div class="rec-item">
+      <div class="rec-num">1</div>
+      <div class="rec-text"><strong>Validate Tier 1 fixes by June 5.</strong> Compare actual FP count against the 14-PR / 9% target. If results fall short, re-examine the prompt changes for Steps 7 and 11 before shipping further changes.</div>
+    </div>
+    <div class="rec-item">
+      <div class="rec-num">2</div>
+      <div class="rec-text"><strong>Unblock Step 12b immediately.</strong> Schedule a quick sync with the ops/product team to define the exact rule for partial milestone matches. Until this is resolved, 4 FPs remain stuck with no fix path.</div>
+    </div>
+    <div class="rec-item">
+      <div class="rec-num">3</div>
+      <div class="rec-text"><strong>Ship Step 5a fix this week as planned.</strong> Successful delivery would reduce the FP rate to ~6%, well below the 9% target, and free up bandwidth to address Tier 3 errors.</div>
+    </div>
+    <div class="rec-item">
+      <div class="rec-num">4</div>
+      <div class="rec-text"><strong>Triage Tier 3 errors after Tier 1/2 stabilise.</strong> Steps 17, 3a, 6, 11-US, and 7-table collectively add 7 FPs. Address them as a batch once the higher-impact fixes are confirmed stable.</div>
+    </div>
+    <div class="rec-item">
+      <div class="rec-num">5</div>
+      <div class="rec-text"><strong>Define an auto-approval threshold.</strong> Once FP rate is sustainably ≤5% across two consecutive data snapshots, enable auto-approval for high-confidence matches (e.g., match score ≥ 90). This is the ultimate goal of the feedback loop.</div>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- Timeline -->
+  <div class="section-label">Timeline</div>
+  <div class="timeline">
+    <div class="tl-item">
+      <div class="tl-left"><div class="tl-dot" style="background:#E24B4A;"></div><div class="tl-line"></div></div>
+      <div><div class="tl-date">June 2, 2026</div><div class="tl-desc">Prompt changes deployed for <strong>Step 7</strong> (Vendor Name) and <strong>Step 11</strong> (Line Items / Currency). Projected to remove 20 FPs combined.</div></div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-left"><div class="tl-dot" style="background:#EF9F27;"></div><div class="tl-line"></div></div>
+      <div><div class="tl-date">This week</div><div class="tl-desc"><strong>Step 5a</strong> (Certificate of Insurance) prompt change expected. Would bring FP rate to ~6%.</div></div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-left"><div class="tl-dot" style="background:#1D9E75;"></div><div class="tl-line"></div></div>
+      <div><div class="tl-date">June 5, 2026</div><div class="tl-desc">Actual outcome data available. Validate against 9% projected target and adjust plan if needed.</div></div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-left"><div class="tl-dot" style="background:#B4B2A9;"></div><div class="tl-line"></div></div>
+      <div><div class="tl-date">TBD</div><div class="tl-desc"><strong>Step 12b</strong> fix — pending ops/product team clarification on milestone matching rules.</div></div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-left"><div class="tl-dot" style="background:#B4B2A9;"></div></div>
+      <div><div class="tl-date">TBD</div><div class="tl-desc">Tier 3 triage (Steps 17, 3a, 6, 11-US, 7-table) and auto-approval threshold evaluation once FP rate ≤5%.</div></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const steps = [
+  'Step 7: Vendor name', 'Step 11: Line items', 'Step 5a: Cert of insurance',
+  'Step 12b: Milestones', 'Step 17: Dispatch', 'Step 11: US doc',
+  'Step 3a: CP102', 'Step 6: Signature', 'Step 7: Table mismatch'
+];
+const counts = [20, 19, 9, 4, 3, 1, 1, 1, 1];
+const colors = ['#E24B4A','#E24B4A','#EF9F27','#EF9F27','#B4B2A9','#B4B2A9','#B4B2A9','#B4B2A9','#B4B2A9'];
+
+new Chart(document.getElementById('barChart'), {
+  type: 'bar',
+  data: {
+    labels: steps,
+    datasets: [{ data: counts, backgroundColor: colors, borderRadius: 3, borderSkipped: false }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ' + c.parsed.x + ' false positives' } } },
+    scales: {
+      x: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 11 }, color: '#888780', stepSize: 5 }, border: { display: false } },
+      y: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#444441' }, border: { display: false } }
+    }
+  }
+});
+
+new Chart(document.getElementById('compareChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Before fixes', 'After (projected)'],
+    datasets: [{ data: [23, 9], backgroundColor: ['#E24B4A', '#1D9E75'], borderRadius: 4, borderSkipped: false }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ' + c.parsed.y + '%' } } },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 12 }, color: '#444441' }, border: { display: false } },
+      y: {
+        grid: { color: 'rgba(0,0,0,0.05)' },
+        ticks: { font: { size: 11 }, color: '#888780', callback: v => v + '%' },
+        border: { display: false },
+        max: 30
+      }
+    }
+  }
+});
+</script>
+</body>
+</html>
